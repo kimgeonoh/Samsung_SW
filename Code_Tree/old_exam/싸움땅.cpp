@@ -14,7 +14,7 @@ int dy[]={0,1,0,-1};
 class PLAYER{
     public:
     int x,y,d,s,g;
-    PLAYER(int x, int y, int d, int s,int g){
+    PLAYER(int x, int y, int d, int s, int g){
         this->x = x;
         this->y = y;
         this->d = d;
@@ -54,7 +54,7 @@ void fight(int number){
 
     for(int i=0; i<m; i++){ // 전진한 곳에 플레이어가 존재하는가 탐색
         if(i == number) continue; // 자기 자신 탐색은 제외
-        if(players[number].x==players[i].x && players[number].y==players[i].y){
+        if(nx==players[i].x && ny==players[i].y){
             // 플레이어가 존재한다면
             find = 1; // find
             index = i;
@@ -69,23 +69,23 @@ void fight(int number){
         iam = players[number].g + players[number].s;
         you = players[index].g + players[number].s;
 
-        char winner,loser;
+        char winner;
         if(iam!=you){
-            if(iam>you) winner = 'i', loser = 'y';
-            if(iam<you) winner = 'y', loser = 'i';
+            if(iam>you) winner = 'i';
+            if(iam<you) winner = 'y';
         }
         else{
-            if(players[number].s < players[index].s) winner = 'y', loser = 'i';
-            if(players[number].s > players[index].s) winner = 'i', loser = 'y';
+            if(players[number].s < players[index].s) winner = 'y';
+            if(players[number].s > players[index].s) winner = 'i';
         }
 
-        // winner, loser에 따라 진행된다
+        // winner에 따라 진행된다
         if(winner = 'i'){
             score[number] += abs(iam-you); // 승리자 점수흭득
             map[nx][ny].push_back(players[index].g); // 패배자의 권총은 격자에 두고
             players[index].g = 0; 
             int na = index_x + dx[players[index].d]; // 원래 방향 1전진
-            int nb = index_x + dx[players[index].d];
+            int nb = index_x + dy[players[index].d];
             find = 0; // find는 격자밖이거나 1전진시 플레이가 잇을때
             if(na<1||n<na||nb<1||n<nb) find = 1 ; // 격자밖으로 나가거나
             for(int i=0; i<m; i++){ // 1전진때 플레이가 잇는 경우
@@ -102,9 +102,10 @@ void fight(int number){
                     int nr = players[index].x + dx[d];
                     int nc = players[index].y + dy[d];
                     find = 0; // find는 빈칸이 아닌 경우 1
+                    if(nr<1||n<nr||nc<1||n<nc) find = 1;
                     for(int i=0; i<m; i++){
                         if(i == index) continue;
-                        if(nr==players[i].x||nc==players[i].y) {
+                        if(nr==players[i].x && nc==players[i].y) {
                             find = 1; 
                             break;
                         }
@@ -124,9 +125,9 @@ void fight(int number){
             // 승리자는 총을 비교해서 센 무기를 갖는다
             sort(map[nx][ny].begin(),map[nx][ny].end());
             int maxgun = map[nx][ny].back();
-            map[nx][ny].pop_back();
-
+            
             if(maxgun>players[number].g){
+                map[nx][ny].pop_back();
                 map[nx][ny].push_back(players[number].g);
                 players[number].g = maxgun;
             }
@@ -135,8 +136,8 @@ void fight(int number){
             score[index] += abs(iam-you); // 승리자 점수흭득
             map[nx][ny].push_back(players[number].g); // 패배자의 권총은 격자에 두고
             players[number].g = 0; 
-            int na = players[number].x + dx[players[number].d]; // 원래 방향 1전진
-            int nb = players[number].x + dx[players[number].d];
+            int na = nx + dx[nowd]; // 원래 방향 1전진
+            int nb = ny + dx[nowd];
             find = 0; // find는 격자밖이거나 1전진시 플레이가 잇을때
             if(na<1||n<na||nb<1||n<nb) find = 1 ; // 격자밖으로 나가거나
             for(int i=0; i<m; i++){ // 1전진때 플레이가 잇는 경우
@@ -146,16 +147,16 @@ void fight(int number){
                 }
             }
             if(find){ // 90도를 회전하며 빈칸을 찾아 이동한다
-                int d = players[number].d;
+                int d = nowd;
                 while(find){
                     d ++;
                     if(d==4) d=0;
-                    int nr = players[number].x + dx[d];
-                    int nc = players[number].y + dy[d];
+                    int nr = nx + dx[d];
+                    int nc = ny + dy[d];
                     find = 0; // find는 빈칸이 아닌 경우 1
                     for(int i=0; i<m; i++){
                         if(i == number) continue;
-                        if(nr==players[i].x||nc==players[i].y) {
+                        if(nr==players[i].x && nc==players[i].y) {
                             find = 1;
                             break;
                         }
@@ -173,11 +174,11 @@ void fight(int number){
             }
             
             // 승리자는 총을 비교해서 센 무기를 갖는다
-            sort(map[nx][ny].begin(),map[nx][ny].end());
+            sort(map[nx][ny].begin(), map[nx][ny].end());
             int maxgun = map[nx][ny].back();
-            map[nx][ny].pop_back();
 
             if(maxgun>players[index].g){
+                map[nx][ny].pop_back();
                 map[nx][ny].push_back(players[index].g);
                 players[index].g = maxgun;
             }
@@ -188,17 +189,18 @@ void fight(int number){
 
             // 먼저 map에 존재하는 여러 총 중 가장 쎈 총을 고른다
 
-            sort(map[nx][ny].begin(),map[nx][ny].end());
+            sort(map[nx][ny].begin(), map[nx][ny].end());
             int maxgun = map[nx][ny].back();
-            map[nx][ny].pop_back();
 
             if(players[number].g>0){ // 플레이어가 총이 있을때
                 if(maxgun > players[number].g){ // map에 있는 총이 더 쎄면
+                    map[nx][ny].pop_back();
                     map[nx][ny].push_back(players[number].g);
                     players[number].g = maxgun;
-                }    
+                }
             }
             else{ // 플레이어가 총이 없을때
+                map[nx][ny].pop_back();
                 players[number].g = maxgun;
             }
         }
