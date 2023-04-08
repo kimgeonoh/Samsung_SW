@@ -25,13 +25,24 @@ class PLAYER{
 
 vector<PLAYER> players;
 
+void gun_replace(int x, int y, int n){
+    
+    sort(map[x][y].begin(), map[x][y].end());
+    int maxgun = map[x][y].back();
+
+    if(maxgun > players[n].g){
+        map[x][y].pop_back();
+        map[x][y].push_back(players[n].g);
+        players[n].g = maxgun;
+    }
+}
+
 void fight(int number){
     // round1
     int nowx = players[number].x;
     int nowy = players[number].y;
     int nowd = players[number].d;
     int nows = players[number].s;
-    int nowg = players[number].g;
     
     int nx = nowx + dx[nowd];
     int ny = nowy + dy[nowd];
@@ -42,6 +53,13 @@ void fight(int number){
         nx = nowx + dx[nowd];
         ny = nowy + dy[nowd];
     }
+
+    // 움직인 곳에 총이 있을 경우 총을 먹는다
+    if(map[nx][ny].back() > 0){
+        gun_replace(nx,ny,number);
+    }
+
+    int nowg = players[number].g;
 
     players[number] = PLAYER(nx,ny,nowd,nows,nowg); // 전진
     
@@ -56,23 +74,25 @@ void fight(int number){
         if(i == number) continue; // 자기 자신 탐색은 제외
         if(nx==players[i].x && ny==players[i].y){
             // 플레이어가 존재한다면
-            find = 1; // find
+            find = 1;
             index = i;
             index_x = players[i].x;
             index_y = players[i].y;
+            break;
         }
     }
 
     if(find){ // 플레이어가 존재한다면
-        // winner, loser를 선정한다
-        int iam,you;
+        // winner를 선정한다
+        cout << "find" << '\n';
+        int iam, you;
         iam = players[number].g + players[number].s;
-        you = players[index].g + players[number].s;
+        you = players[index].g + players[index].s;
 
         char winner;
-        if(iam!=you){
-            if(iam>you) winner = 'i';
-            if(iam<you) winner = 'y';
+        if(iam != you){
+            if(iam > you) winner = 'i';
+            if(iam < you) winner = 'y';
         }
         else{
             if(players[number].s < players[index].s) winner = 'y';
@@ -81,6 +101,7 @@ void fight(int number){
 
         // winner에 따라 진행된다
         if(winner = 'i'){
+            cout << "yes" << '\n';
             score[number] += abs(iam-you); // 승리자 점수흭득
             map[nx][ny].push_back(players[index].g); // 패배자의 권총은 격자에 두고
             players[index].g = 0; 
@@ -121,18 +142,19 @@ void fight(int number){
                 players[index].x = na;
                 players[index].y = nb;
             }
-            
+
+            //패배자가 움직인 빈칸에 총이 있을 경우 총을 비교해서 센 무기를 갖는다
+            if(map[players[index].x][players[index].y].back() > 0){
+                gun_replace(players[index].x, players[index].y, index);
+            }
+
             // 승리자는 총을 비교해서 센 무기를 갖는다
-            sort(map[nx][ny].begin(),map[nx][ny].end());
-            int maxgun = map[nx][ny].back();
-            
-            if(maxgun>players[number].g){
-                map[nx][ny].pop_back();
-                map[nx][ny].push_back(players[number].g);
-                players[number].g = maxgun;
+            if(map[nx][ny].back() > 0){
+                gun_replace(nx, ny, number);
             }
         }
         if(winner = 'y'){
+            cout << "no" << '\n';
             score[index] += abs(iam-you); // 승리자 점수흭득
             map[nx][ny].push_back(players[number].g); // 패배자의 권총은 격자에 두고
             players[number].g = 0; 
@@ -172,37 +194,21 @@ void fight(int number){
                 players[number].x = na;
                 players[number].y = nb;
             }
-            
-            // 승리자는 총을 비교해서 센 무기를 갖는다
-            sort(map[nx][ny].begin(), map[nx][ny].end());
-            int maxgun = map[nx][ny].back();
 
-            if(maxgun>players[index].g){
-                map[nx][ny].pop_back();
-                map[nx][ny].push_back(players[index].g);
-                players[index].g = maxgun;
+            //패배자가 움직인 빈칸에 총이 있을 경우 총을 비교해서 센 무기를 갖는다
+            if(map[players[number].x][players[number].y].back() > 0){
+                gun_replace(players[number].x, players[number].y, number);
+            }
+
+            // 승리자는 총을 비교해서 센 무기를 갖는다
+            if(map[nx][ny].back() > 0){
+                gun_replace(players[index].x, players[index].y, index);
             }
         }
     }
     else{ // 플레이어가 존재하지 않는다면
-        if(map[nx][ny][0]>0){ // 맵에 총이 있다면
-
-            // 먼저 map에 존재하는 여러 총 중 가장 쎈 총을 고른다
-
-            sort(map[nx][ny].begin(), map[nx][ny].end());
-            int maxgun = map[nx][ny].back();
-
-            if(players[number].g>0){ // 플레이어가 총이 있을때
-                if(maxgun > players[number].g){ // map에 있는 총이 더 쎄면
-                    map[nx][ny].pop_back();
-                    map[nx][ny].push_back(players[number].g);
-                    players[number].g = maxgun;
-                }
-            }
-            else{ // 플레이어가 총이 없을때
-                map[nx][ny].pop_back();
-                players[number].g = maxgun;
-            }
+        if(map[nx][ny].back() > 0){ // 맵에 총이 있다면
+            gun_replace(nx, ny, number);
         }
     }
     
@@ -227,5 +233,9 @@ int main() {
             fight(j);
         }
     }
-    for(int i=0; i<m; i++) cout << score[i] << ' ';
+    for(int i=0; i<m; i++) {
+        cout << players[i].x << ' ' << players[i].y << '\n';
+
+        //cout << score[i] << ' ';
+    }
 }
